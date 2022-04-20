@@ -37,8 +37,8 @@
       ]
     },
     "/Users/evgeniatanasov/Desktop/LimeChainEntryExam/contracts/Shop.sol": {
-      "lastModificationDate": 1649581575323,
-      "contentHash": "ce20998e3b7eb5d9c376e49d5148782b",
+      "lastModificationDate": 1650449062197,
+      "contentHash": "4fcc2a139540eacd75510bbb66cb97df",
       "sourceName": "contracts/Shop.sol",
       "solcConfig": {
         "version": "0.8.13",

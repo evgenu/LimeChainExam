@@ -1,66 +1,61 @@
 pragma solidity ^0.8.13;
 
 contract Shop {
-
 	address private owner;
-
-	struct Item {
-		uint id;
-		address owner;
-		uint timeOfPurchase;
+	
+	struct SoldItem {
+		uint quantity;
+		uint blocktime;
 	}
+	
+	mapping(uint => uint) public items;
+	mapping(address => mapping(uint => SoldItem)) public clientPurchases;
+	mapping(uint => address) public clients;
+	uint totalClients = 0;
 
 	constructor() {
 		owner = msg.sender;
 	}
 
-	Item[] public items;
-	address[] public clients;
+	function addItem(uint _id, uint _quiantity) public {
+		require(msg.sender == owner, "Not owner");
+		items[_id] += _quiantity;
+	}
+
+	function listItems(uint _id) public view returns(uint){
+		return items[_id];
+	}
+
+	function buyItem(uint _id) public {
+		require(msg.sender != owner, "Not client");
+		require(clientPurchases[msg.sender][_id].quantity == 0, "Client already has this product");
+		require(items[_id] > 0, "No items to sell");
+		clientPurchases[msg.sender][_id].quantity ++;
+		clientPurchases[msg.sender][_id].blocktime = block.number;
+		items[_id] --;
+		clients[totalClients] = msg.sender;
+		totalClients ++;
+	}
+
+	function returnItem(uint _id) public {
+		require(msg.sender != owner, "Not client");
+		require(clientPurchases[msg.sender][_id].quantity > 0, "No items to return");
+		if(block.number - clientPurchases[msg.sender][_id].blocktime <= 100) {
+			delete clientPurchases[msg.sender][_id];
+			items[_id] ++;
+		}
+	}
 	
-	receive() external payable {}
-	fallback() external payable {}
-
-	function addItem(uint _id, uint _quantity) public {
-		require(msg.sender == owner, "Cannot add item. You are not the owner.");
-		for(uint i; i < _quantity; i++) {
-			items.push(Item(_id, owner, 0));
-		}
-	}
-
-	function listItems() public view returns(Item[] memory) {
-		return items;
-	}
-
-	function buyItem(uint _id) public payable {
-		require(msg.sender != owner, "You can't buy your own stock.");
-		owner.call{value: msg.value}("");
-			
-		//Transfer shop's item to the client.
-		for(uint i; i < items.length; i++) {
-			if(items[i].id == _id && items[i].owner == owner && address(this).balance > 0) {
-				items[i].owner = msg.sender;
-				items[i].timeOfPurchase = block.number;
-				clients.push(msg.sender);
-				return;
-			}
-		}
-	}
-
-	function returnItem(uint _id, address payable client) public payable {
-		require(msg.sender == owner, "You can't just operate with the shop owner's money.");
-		client.call{value: msg.value}("");
-		
-		//Transfer client's item to the shop.
-		for(uint i; i < items.length; i++) {
-			if (items[i].id == _id && items[i].owner == client && address(this).balance > 0 && block.number - items[i].timeOfPurchase < 100) {
-				items[i].owner = owner;
-				items[i].timeOfPurchase = 0;
-				return;
-			}
-		}
+	function listClientItems(address _client, uint _id) public view returns(uint){
+		return clientPurchases[_client][_id].quantity;
 	}
 
 	function listClients() public view returns(address[] memory) {
-		return clients;
+		address[] memory clientsInStore = new address[](totalClients);
+		for(uint i; i < totalClients; i++) {
+			clientsInStore[i] = clients[i];
+		}
+
+		return clientsInStore;
 	}
 }
